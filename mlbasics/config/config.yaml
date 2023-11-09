@@ -1,0 +1,4 @@
+general:
+  logging_level: ERROR
+
+dataset: dataset1.csv
