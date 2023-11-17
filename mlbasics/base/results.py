@@ -17,20 +17,22 @@ class ClassificationResults():
         x: Any = None,
         y_real: Optional[Any] = None,
         y_predicted: Any = None,
-        training_time: time.time = None
+        training_time: time.time = None,
+        kfold_score: Optional[Any] = None,
         ) -> None:
         self.name = name
         self.x = x
         self.y_real = y_real
         self.y_predicted = y_predicted
         self.training_time = training_time
+        self.kfold_score = kfold_score
 
         if y_real is not None:
             self.accuracy = accuracy_score(y_real, y_predicted)
             self.precision = precision_score(y_real, y_predicted, average='weighted')
             self.recall = recall_score(y_real, y_predicted, average='weighted')
             self.f1 = f1_score(y_real, y_predicted, average='weighted')
-
+        
     def plot_confusion_mat(self):
         bplot.confusion_mat(self.y_real, self.y_predicted)
 
@@ -42,8 +44,7 @@ class ClassificationResults():
         
 
 def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
-    df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time"])
-
+    df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time", "K-Fold Score"])
     for model in results:
         df.loc[len(df.index)] = [
             model.name,
@@ -51,7 +52,8 @@ def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
             round(model.precision, 3),
             round(model.recall, 3),
             round(model.f1, 3),
-            round(model.training_time, 3)
+            round(model.training_time, 3),
+            round(model.kfold_score.mean(), 3) if model.kfold_score is not None else "-"
             ]
     
     return df

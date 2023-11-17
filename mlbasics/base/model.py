@@ -1,6 +1,7 @@
 from typing import Optional, Any, Tuple, Dict, List
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score, KFold
 import time
 
 from tqdm import tqdm
@@ -25,6 +26,7 @@ class BaseModel:
         self.outdim = Y.shape[0] if len(Y.shape) > 0 else 1
         self.labels = set(Y)
         self.D = len(self.labels)
+        self.kfold_scores = None
     
 
     def split(self, seed: int = 110, split_size: float = 0.333):
@@ -40,7 +42,7 @@ class BaseModel:
             random_state=seed
         )
 
-    def fit(self, classifier: Any, use_split: bool = False):
+    def fit(self, classifier: Any, use_split: bool = False, kfold: KFold = None):
         """
         Fits the classifier to the training data.
         :param classifier: The machine learning classifier to train.
@@ -48,9 +50,16 @@ class BaseModel:
         """
         self.classifier = classifier
         if use_split: 
-            self.classifier.fit(self.X_train, self.Y_train)
+            x_clf = self.X_train
+            y_clf = self.Y_train
         else:
-            self.classifier.fit(self.X, self.Y)
+            x_clf = self.X
+            y_clf = self.Y
+
+        if kfold is not None:
+            self.kfold_scores = cross_val_score(self.classifier, x_clf, y_clf, cv=kfold)
+
+        self.classifier.fit(x_clf, y_clf)
 
     def predict(self, X: Optional[Any] = None, use_split: bool = False) -> Any:
         """
@@ -91,7 +100,9 @@ class CompactModel(BaseModel):
         Y: Optional[Any] = None,
         use_split: bool = True,
         split_size: float = 0.3,
-        classifiers: Dict[str, Any] = {}
+        classifiers: Dict[str, Any] = {},
+        kfold: KFold = None,
+        seed: int = 110
     ):
         """
         Initializes the CompactModel with a dataset or data, and sets up the environment for training and evaluation.
@@ -111,10 +122,11 @@ class CompactModel(BaseModel):
         super().__init__(X, Y)
 
         if use_split:
-            self.split(split_size=split_size)
+            self.split(split_size=split_size, seed=seed)
 
         self.use_split = use_split
         self.classifiers = classifiers
+        self.kfold = kfold
 
     def run(self) -> Dict[str,ClassificationResults]:
 
@@ -127,7 +139,7 @@ class CompactModel(BaseModel):
         for name, model in tqdm(self.classifiers.items(), desc="Training Models"):
         
             timer = time.time()
-            self.fit(classifier=model,use_split=self.use_split)
+            self.fit(classifier=model,use_split=self.use_split, kfold=self.kfold)
             training_time = time.time() - timer
             prediction = self.predict(use_split=self.use_split)
 
@@ -136,7 +148,8 @@ class CompactModel(BaseModel):
                 x = self.X_test if self.split else self.X,
                 y_real= self.Y_test if self.split else self.Y,
                 y_predicted = prediction,
-                training_time = training_time
+                training_time = training_time,
+                kfold_score=self.kfold_scores
             )
             results[name] = output
 
