@@ -1,9 +1,10 @@
-from typing import Optional, Any, Tuple
+from typing import Optional, Any, Tuple, Dict, List
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
-from mlbasics.data.load_data import load_data
-import mlbasics.base.plot as bplot
+import time
 
+from mlbasics.data.load_data import load_data
+from mlbasics.base.results import ClassificationResults
 
 class BaseModel:
     """
@@ -89,18 +90,17 @@ class CompactModel(BaseModel):
         Y: Optional[Any] = None,
         use_split: bool = True,
         split_size: float = 0.3,
-        classifier: Any = None,
-        show_results: bool = True,
-        plot_results: bool = True
+        classifiers: Dict[str, Any] = {}
     ):
         """
         Initializes the CompactModel with a dataset or data, and sets up the environment for training and evaluation.
+        You can either pass the input as a string in "dataset" or directly to "X,Y"
         :param dataset: Name of the dataset to load.
         :param X: Input features.
         :param Y: Target values.
         :param use_split: Whether to split the dataset.
         :param split_size: Size of the split for the test set.
-        :param classifier: The machine learning classifier to train.
+        :param classifiers: A dictionary with the names and algorithms to use for training
         :param show_results: Whether to print classification report.
         :param plot_results: Whether to plot confusion matrix.
         """
@@ -113,22 +113,30 @@ class CompactModel(BaseModel):
             self.split(split_size=split_size)
 
         self.use_split = use_split
-        self.classifier = classifier
-        self.show_results = show_results
-        self.plot_results = plot_results
+        self.classifiers = classifiers
 
-    def run(self) -> Any:
-        """
-        Run all the model with the parameters given at initialization
-        """
-        
-        self.fit(classifier=self.classifier,use_split=self.use_split)
-        prediction = self.predict(use_split=self.use_split)
-    
-        if self.show_results:
-            print(classification_report(self.Y_test, prediction))
+    def run(self) -> List[ClassificationResults]:
 
-        if self.plot_results:
-            bplot.confusion_mat(self.Y_test, prediction)
+        """
+        Run all the models with the parameters given at initialization
+        """
+
+        results = []
+
+        for name, model in self.classifiers.items():
         
-        return self.prediction
+            timer = time.time()
+            self.fit(classifier=model,use_split=self.use_split)
+            training_time = time.time() - timer
+            prediction = self.predict(use_split=self.use_split)
+
+            output = ClassificationResults(
+                name = name,
+                x = self.X_test if self.split else self.X,
+                y_real= self.Y_test if self.split else self.Y,
+                y_predicted = prediction,
+                training_time = training_time
+            )
+            results.append(output)
+
+        return results
