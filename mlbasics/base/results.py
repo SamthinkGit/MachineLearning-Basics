@@ -1,11 +1,12 @@
 from typing import Any, Optional, List
-from prettytable import PrettyTable
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score,
-    f1_score, classification_report
+    f1_score, classification_report, confusion_matrix
     )
 
 import mlbasics.base.plot as bplot
+import numpy as np
+import pandas as pd
 import time
 
 class ClassificationResults():
@@ -40,18 +41,40 @@ class ClassificationResults():
         print(classification_report(self.y_real, self.y_predicted))
         
 
-def results2table(results: List[ClassificationResults] = []):
-    table = PrettyTable()
-    table.field_names = ["Model", "accuracy", "precision", "recall", "f1", "time"]
-    for obj in results:
-        table.add_row([
-            obj.name, 
-            round(obj.accuracy,3), 
-            round(obj.precision,3),
-            round(obj.recall,3), 
-            round(obj.f1,3),
-            round(obj.training_time,3)
-            ])
+def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
+    df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time"])
+
+    for model in results:
+        df.loc[len(df.index)] = [
+            model.name,
+            round(model.accuracy, 3),
+            round(model.precision, 3),
+            round(model.recall, 3),
+            round(model.f1, 3),
+            round(model.training_time, 3)
+            ]
     
-    return table
-    
+    return df
+
+def missclasification_table(results: List[ClassificationResults], labels: List[Any], show_proportion: Optional[bool] = True) -> pd.DataFrame:
+
+    df = pd.DataFrame(columns = ["model"] + labels)
+
+    for model in results:
+        cm = confusion_matrix(model.y_real,model.y_predicted)
+        N = cm.shape[0]
+        error = np.zeros(N)
+
+        for i in range(N):
+            misses = np.sum(cm[:, i]) - cm[i, i] 
+            total = np.sum(cm[:,i])
+
+            if show_proportion:
+                error[i] = round(misses / total, 3)
+            else:
+                error[i] = misses
+            
+
+        df.loc[len(df.index)] = [model.name] + list(error)
+
+    return df 

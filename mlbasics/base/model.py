@@ -3,6 +3,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 import time
 
+from tqdm import tqdm
 from mlbasics.data.load_data import load_data
 from mlbasics.base.results import ClassificationResults
 
@@ -115,15 +116,15 @@ class CompactModel(BaseModel):
         self.use_split = use_split
         self.classifiers = classifiers
 
-    def run(self) -> List[ClassificationResults]:
+    def run(self) -> Dict[str,ClassificationResults]:
 
         """
         Run all the models with the parameters given at initialization
         """
 
-        results = []
+        results = {}
 
-        for name, model in self.classifiers.items():
+        for name, model in tqdm(self.classifiers.items(), desc="Training Models"):
         
             timer = time.time()
             self.fit(classifier=model,use_split=self.use_split)
@@ -137,6 +138,6 @@ class CompactModel(BaseModel):
                 y_predicted = prediction,
                 training_time = training_time
             )
-            results.append(output)
+            results[name] = output
 
         return results

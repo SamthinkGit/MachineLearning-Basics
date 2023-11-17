@@ -1,16 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+
+from typing import Optional
 from sklearn.metrics import confusion_matrix
 from sklearn.decomposition import PCA
 
+def plot_mt(df: pd.DataFrame):
+
+    df = df.set_index('model').T
+    df.plot(kind='bar')
+    plt.xlabel('Model')
+    plt.ylabel('Label')
+    plt.title('Label Missclasification for each Model')
+    plt.show()
+
 def pca_scatter(X,Y):
  
-    # Reducir la dimensión de los datos a 2 componentes
     pca = PCA(n_components=2)
     X_r = pca.fit_transform(X)
 
-    # Plotear los dos componentes principales
     plt.scatter(
         X_r[:, 0],
         X_r[:, 1],
