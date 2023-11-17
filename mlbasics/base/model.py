@@ -136,21 +136,25 @@ class CompactModel(BaseModel):
 
         results = {}
 
-        for name, model in tqdm(self.classifiers.items(), desc="Training Models"):
         
-            timer = time.time()
-            self.fit(classifier=model,use_split=self.use_split, kfold=self.kfold)
-            training_time = time.time() - timer
-            prediction = self.predict(use_split=self.use_split)
+        with tqdm(self.classifiers.items(), desc="Training Models") as t:
+            for name, model in t:
+        
+                t.set_description(name)
+                timer = time.time()
+                self.fit(classifier=model,use_split=self.use_split, kfold=self.kfold)
+                training_time = time.time() - timer
+                prediction = self.predict(use_split=self.use_split)
 
-            output = ClassificationResults(
-                name = name,
-                x = self.X_test if self.split else self.X,
-                y_real= self.Y_test if self.split else self.Y,
-                y_predicted = prediction,
-                training_time = training_time,
-                kfold_score=self.kfold_scores
-            )
-            results[name] = output
+                output = ClassificationResults(
+                    name = name,
+                    x = self.X_test if self.split else self.X,
+                    y_real= self.Y_test if self.split else self.Y,
+                    y_predicted = prediction,
+                    training_time = training_time,
+                    kfold_score=self.kfold_scores
+                )
+                results[name] = output
+                t.write(f"✅ Completed: {name}")
 
         return results
