@@ -2,7 +2,10 @@ general:
   logging_level: ERROR
 
 dataset: dataset1.csv
-
+plot:
+  resolution: 100
+  round: 3
 model:
-  max_iterations: 1000
+  max_iterations: 2000
+  n_neighbors: 70
 

@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, List, Optional
 from sklearn import tree
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB, GaussianNB
-from sklearn.linear_model import LogisticRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from mlbasics.config.utils import get_config
@@ -31,8 +34,37 @@ class SupportedClassifiers:
     @staticmethod
     def LogisticMultinomialRegression() -> LogisticRegression:
         config = get_config()
-        log = LogisticRegression(multi_class='multinomial', max_iter=config['model']['max_iterations'])
-        return make_pipeline(StandardScaler(), log)
+        return LogisticRegression(multi_class='multinomial', max_iter=config['model']['max_iterations'])
+
+    @staticmethod
+    def KNeighbors() -> KNeighborsClassifier:
+        config = get_config()
+        return KNeighborsClassifier(n_neighbors=config['model']['n_neighbors'])
+
+    @staticmethod
+    def LinearSVC() -> SVC:
+        return SVC(kernel='linear', probability=True)
+
+    @staticmethod
+    def KernelizedSVC() -> SVC:
+        return SVC(kernel='rbf', probability=True)
+
+    @staticmethod
+    def PolySVC() -> SVC:
+        return SVC(kernel='poly', probability=True)
+
+    @staticmethod
+    def SigmoidSVC() -> SVC:
+        return SVC(kernel='sigmoid',probability=True)
+ 
+    @staticmethod
+    def PerceptronClassifier() -> Perceptron:
+        Perceptron.predict_proba = lambda self, y: None 
+        return Perceptron()
+
+    @staticmethod
+    def FisherLineal() -> LinearDiscriminantAnalysis:
+        return LinearDiscriminantAnalysis()
 
 def get_all_supported_classifiers(skip_list: Optional[List[str]] = []):
     classifiers = {}

@@ -17,7 +17,6 @@ def plot_mt(df: pd.DataFrame):
     plt.show()
 
 def pca_scatter(X,Y):
- 
     pca = PCA(n_components=2)
     X_r = pca.fit_transform(X)
 

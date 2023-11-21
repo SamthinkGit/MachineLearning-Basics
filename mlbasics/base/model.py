@@ -1,4 +1,5 @@
 from typing import Optional, Any, Tuple, Dict, List
+from sklearn.pipeline import make_pipeline
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score, KFold
@@ -20,6 +21,8 @@ class BaseModel:
         :param Y: Target values.
         """
         self.X = X
+        self.X_test = None
+        self.Y_test = None
         self.indim = X.shape[1]  # Assumes X is a 2D array-like structure
 
         self.Y = Y
@@ -70,9 +73,24 @@ class BaseModel:
         """
         if use_split:
             return self.classifier.predict(self.X_test)
-        else:
+        elif X is not None:
             return self.classifier.predict(X)
+        else:
+            return self.classifier.predict(self.X)
+            
 
+    def predict_proba(self, X: Optional[Any] = None, use_split: bool = False) -> Any:
+        """
+        Makes predictions using the classifier.
+        :return: Predicted probabilities of all values.
+        """
+        if use_split:
+            return self.classifier.predict_proba(self.X_test)
+        elif X is not None:
+            return self.classifier.predict_proba(X)
+        else:
+            return self.classifier.predict_proba(self.X)
+    
     def print_info(self):
         """
         Prints information about the model and dataset.
@@ -98,10 +116,12 @@ class CompactModel(BaseModel):
         dataset: Optional[str] = None,
         X: Optional[Any] = None,
         Y: Optional[Any] = None,
+        preprocessing: Optional[List[Any]] = None,
         use_split: bool = True,
         split_size: float = 0.3,
         classifiers: Dict[str, Any] = {},
         kfold: KFold = None,
+        compute_probs: Optional[bool] = False,
         seed: int = 110
     ):
         """
@@ -113,20 +133,36 @@ class CompactModel(BaseModel):
         :param use_split: Whether to split the dataset.
         :param split_size: Size of the split for the test set.
         :param classifiers: A dictionary with the names and algorithms to use for training
+        :param kfold: A Kfold object to test the classifiers
+        :param compute_probs: Force the algorithm to return the probabilities of X in results
         :param show_results: Whether to print classification report.
         :param plot_results: Whether to plot confusion matrix.
         """
+        # --- Load Dataset ---
         if dataset:
             X, Y = load_data(dataset)
 
+        # --- Add Preprocessing (If settled) ---
+        if preprocessing is not None:
+            for p in preprocessing:
+                X = p.fit_transform(X) 
+
         super().__init__(X, Y)
 
+        # --- Split (If settled) ---
         if use_split:
             self.split(split_size=split_size, seed=seed)
 
         self.use_split = use_split
+
+        # --- Save variables ---
         self.classifiers = classifiers
         self.kfold = kfold
+        self.preprocessing = preprocessing
+        self.compute_probs = compute_probs
+
+
+
 
     def run(self) -> Dict[str,ClassificationResults]:
 
@@ -135,25 +171,35 @@ class CompactModel(BaseModel):
         """
 
         results = {}
-
         
+        # --- For each clf ---
         with tqdm(self.classifiers.items(), desc="Training Models") as t:
             for name, model in t:
         
+                # --- Initialice Run ---
                 t.set_description(name)
                 timer = time.time()
+
+                # --- Train clf ---
                 self.fit(classifier=model,use_split=self.use_split, kfold=self.kfold)
                 training_time = time.time() - timer
+
+                # --- Predict new X ---
                 prediction = self.predict(use_split=self.use_split)
 
+                # --- Save Results ---
                 output = ClassificationResults(
                     name = name,
-                    x = self.X_test if self.split else self.X,
-                    y_real= self.Y_test if self.split else self.Y,
+                    x = self.X_test if self.use_split else self.X,
+                    y_real = self.Y_test if self.use_split else self.Y,
                     y_predicted = prediction,
+                    labels=self.labels,
                     training_time = training_time,
-                    kfold_score=self.kfold_scores
+                    kfold_score=self.kfold_scores,
+                    y_scores=self.predict_proba(use_split=self.use_split) if self.compute_probs else None,
                 )
+
+                # --- Prepare next Run ---
                 results[name] = output
                 t.write(f"✅ Completed: {name}")
 

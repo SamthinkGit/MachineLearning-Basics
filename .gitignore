@@ -4,4 +4,6 @@ __pycache__
 getpath.ps1
 input
 project.log
+test*
+
 
