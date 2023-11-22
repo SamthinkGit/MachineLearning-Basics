@@ -27,7 +27,7 @@ class BaseModel:
 
         self.Y = Y
         self.outdim = Y.shape[0] if len(Y.shape) > 0 else 1
-        self.labels = set(Y)
+        self.labels = list(set(Y))
         self.D = len(self.labels)
         self.kfold_scores = None
     

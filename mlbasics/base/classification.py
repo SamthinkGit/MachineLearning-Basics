@@ -54,10 +54,6 @@ class SupportedClassifiers:
         return SVC(kernel='poly', probability=True)
 
     @staticmethod
-    def SigmoidSVC() -> SVC:
-        return SVC(kernel='sigmoid',probability=True)
- 
-    @staticmethod
     def PerceptronClassifier() -> Perceptron:
         Perceptron.predict_proba = lambda self, y: None 
         return Perceptron()

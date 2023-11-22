@@ -59,6 +59,11 @@ class DataAnalyzer():
         plt.tight_layout()
         plt.show()
         
+    def sanitize(self):
+        same_value_columns_idx = (self.X == self.X[0]).all(axis=0)
+        X = self.X[:, ~same_value_columns_idx]
+        self.__init__(X, self.Y)
+        
 
     def filter_outliers(self, percentile: int = 95 ) -> Any:
 

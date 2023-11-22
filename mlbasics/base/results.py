@@ -34,6 +34,7 @@ class ClassificationResults():
         self.y_scores = y_scores
         self.labels = labels
         self.y_scores = y_scores
+        self.roc = None
 
         if y_scores is not None:
             self.auc = roc_auc_score(self.y_real, y_scores, multi_class='ovr')
@@ -76,35 +77,35 @@ class ClassificationResults():
             self.fpr[i], self.tpr[i], _ = roc_curve(self.y_real == i, self.y_scores[:, i])
             self.roc[i] = auc(self.fpr[i], self.tpr[i])
 
-        self.round_roc = dict()
-        for key, value in self.roc.items():
-            self.round_roc[key] = round(value, config['plot']['round'])
-
 def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
-    df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time", "K-Fold Score",
-                               "AUC", "ROC"])
-    rnd =  get_config()['plot']['round']
+    df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time", "K-Fold Score", "AUC"])
     for model in results:
         df.loc[len(df.index)] = [
             model.name,
-            round(model.accuracy, rnd),
-            round(model.precision, rnd),
-            round(model.recall, rnd),
-            round(model.f1, rnd),
-            round(model.training_time, rnd),
-            round(model.kfold_score.mean(), rnd) if model.kfold_score is not None else "-",
-            round(model.auc, rnd) if model.y_scores is not None else "-",
-            # TODO: Show this as separated DF
-            model.round_roc if model.y_scores is not None else "-"
-            
+            model.accuracy,
+            model.precision,
+            model.recall,
+            model.f1,
+            model.training_time,
+            model.kfold_score.mean() if model.kfold_score is not None else "-",
+            model.auc if model.y_scores is not None else "-",
             ]
     
     return df
 
+def roc_table(results: List[ClassificationResults]) -> pd.DataFrame:
+    df = pd.DataFrame(columns = ["Model"] + results[0].labels + ["Average"])
+    for model in results:
+        roc_values = ["-"]*len(model.labels) if model.roc is None else list(model.roc.values())
+        average = ["-"] if model.roc is None else [np.mean(roc_values)]
+        df.loc[len(df.index)] = [model.name] + roc_values + average
 
-def missclasification_table(results: List[ClassificationResults], labels: List[Any], show_proportion: Optional[bool] = True) -> pd.DataFrame:
+    return df
 
-    df = pd.DataFrame(columns = ["model"] + labels)
+def missclasification_table(results: List[ClassificationResults], show_proportion: Optional[bool] = True) -> pd.DataFrame:
+
+    config = get_config()
+    df = pd.DataFrame(columns = ["Model"] + results[0].labels + ["Average"])
 
     for model in results:
         cm = confusion_matrix(model.y_real,model.y_predicted)
@@ -115,12 +116,15 @@ def missclasification_table(results: List[ClassificationResults], labels: List[A
             misses = np.sum(cm[:, i]) - cm[i, i] 
             total = np.sum(cm[:,i])
 
+            if total == 0:
+                error[i] = np.NAN
+                continue
+            
             if show_proportion:
-                error[i] = round(misses / total, 3)
+                error[i] = misses / total
             else:
                 error[i] = misses
             
-
-        df.loc[len(df.index)] = [model.name] + list(error)
+        df.loc[len(df.index)] = [model.name] + list(error) + [np.mean(error)]
 
     return df 
