@@ -217,6 +217,22 @@ class CompactModel(BaseModel):
         return results
     
 class LearningModel(BaseModel):
+    """
+    A machine learning model that supports iterative training (for hyperparameter searching).
+
+    Attributes:
+        clfs: A list of classifiers to be used in the training process.
+        use_split: Boolean indicating whether to use data splitting.
+        split_size: The proportion of the dataset to include in the test split.
+        seed: The seed for random number generation.
+        steps: Number of steps or iterations for training.
+        preprocessing: Preprocessing steps to apply to the data.
+        classifiers: A list of classifiers configurations.
+        kfold: KFold cross-validator.
+        compute_probs: Whether to compute prediction probabilities.
+        results: Dictionary to store the results after each iteration.
+        iteration: Counter for the current iteration.
+    """
 
     def __init__(
         self,
@@ -232,6 +248,7 @@ class LearningModel(BaseModel):
         steps: int = 30
     ):
 
+        # --- Building Multiple Classifiers as a Dict ---
         clfs = []
         for i in range(steps):
             clfs.append({"name": f'{classifier["name"]}{i}', "model": classifier["model"]})
@@ -256,6 +273,12 @@ class LearningModel(BaseModel):
         self.iteration = 0
 
     def step(self):
+        """
+        Executes a single training step, including preprocessing, training, and result storing.
+
+        .. note:: You may want to change the attributes of the model between each step, if not,
+            consider using CompactModel
+        """
 
         timer = time.time()
 
@@ -282,12 +305,12 @@ class LearningModel(BaseModel):
         # --- Save Results ---
         output = ClassificationResults(
             name=self.clfs[self.iteration]["name"],
-            x = self.X_test,
-            y_real = self.Y_test,
+            x=self.X_test,
+            y_real=self.Y_test,
             model=self.clfs[self.iteration]["model"],
-            y_predicted = prediction,
+            y_predicted=prediction,
             labels=self.labels,
-            training_time = training_time,
+            training_time=training_time,
             kfold_score=self.kfold_scores,
             y_scores=self.predict_proba(use_split=self.use_split) if self.compute_probs else None,
         )

@@ -13,6 +13,20 @@ import pandas as pd
 import time
 
 class ClassificationResults():
+    """
+    A class to store and process classification results.
+
+    Attributes:
+        name (str): The name of the model.
+        x (Any): The input data used for predictions.
+        y_real (Any): The actual labels.
+        y_predicted (Any): The predicted labels by the model.
+        labels (Any): The class labels.
+        model (Any): The classification model used.
+        training_time (float): The time taken for training the model.
+        kfold_score (Any): The score obtained using K-Fold cross-validation.
+        y_scores (np.ndarray): The predicted scores (probabilities).
+    """
     
     def __init__(
         self,
@@ -52,10 +66,12 @@ class ClassificationResults():
             self.f1 = f1_score(y_real, y_predicted, average='weighted')
 
         
-    def plot_confusion_mat(self):
+    def plot_confusion_mat(self) -> None:
+        """Plots the confusion matrix."""
         bplot.confusion_mat(self.y_real, self.y_predicted)
 
-    def plot_roc_curves(self):
+    def plot_roc_curves(self) -> None:
+        """Plots the ROC curves for each class."""
         plt.figure()
         for i in range(len(self.labels)):
             plt.plot(self.fpr[i], self.tpr[i], label=f'ROC curve (area = {self.roc[i]:0.2f}) for class {i}')
@@ -67,13 +83,16 @@ class ClassificationResults():
         plt.legend(loc="lower right")
         plt.show()
 
-    def print_training_time(self):
+    def print_training_time(self) -> None:
+        """Prints the training time."""
         print("Training Time: ", self.training_time)
     
-    def print_classification_report(self):
+    def print_classification_report(self) -> None:
+        """Prints the classification report."""
         print(classification_report(self.y_real, self.y_predicted))
     
-    def compute_roc(self):
+    def compute_roc(self) -> None:
+        """Computes the ROC curves data for each class."""
         config = get_config()
         for i in range(len(self.labels)):
             self.fpr[i], self.tpr[i], _ = roc_curve(self.y_real == i, self.y_scores[:, i])
@@ -81,6 +100,12 @@ class ClassificationResults():
 
             
 def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
+    """
+    Converts a list of ClassificationResults to a pandas DataFrame.
+
+    :param results: List of ClassificationResults objects.
+    :return: DataFrame with model metrics
+    """
     df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time", "K-Fold Score", "AUC"])
     for model in results:
         df.loc[len(df.index)] = [
@@ -97,6 +122,12 @@ def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
     return df
 
 def roc_table(results: List[ClassificationResults]) -> pd.DataFrame:
+    """
+    Creates a DataFrame with ROC values for each model.
+
+    :param results: List of ClassificationResults objects.
+    :return: DataFrame with ROC values.
+    """
     df = pd.DataFrame(columns = ["Model"] + results[0].labels + ["Average"])
     for model in results:
         roc_values = ["-"]*len(model.labels) if model.roc is None else list(model.roc.values())
@@ -106,7 +137,13 @@ def roc_table(results: List[ClassificationResults]) -> pd.DataFrame:
     return df
 
 def missclasification_table(results: List[ClassificationResults], show_proportion: Optional[bool] = True) -> pd.DataFrame:
+    """
+    Creates a DataFrame with missclassification information for each model.
 
+    :param results: List of ClassificationResults objects.
+    :param show_proportion: Whether to show error as proportion.
+    :return: DataFrame with missclassification data.
+    """
     config = get_config()
     df = pd.DataFrame(columns = ["Model"] + results[0].labels + ["Average"])
 
@@ -125,13 +162,10 @@ def missclasification_table(results: List[ClassificationResults], show_proportio
             
             if show_proportion:
                 error[i] = misses / total
+            
             else:
                 error[i] = misses
             
         df.loc[len(df.index)] = [model.name] + list(error) + [np.mean(error)]
 
     return df 
-
-def feature_importances_table(results: List[ClassificationResults]):
-    pass
-    

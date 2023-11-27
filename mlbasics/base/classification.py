@@ -1,19 +1,21 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB, GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
 from mlbasics.config.utils import get_config
 
 import inspect
 
 @dataclass
 class SupportedClassifiers:
+    """
+    A class that encapsulates all supported classifiers for mlbasics.
+    Provides static methods to instantiate each classifier.
+    """
 
     @staticmethod
     def DecisionTree() -> tree.DecisionTreeClassifier:
@@ -62,7 +64,13 @@ class SupportedClassifiers:
     def FisherLineal() -> LinearDiscriminantAnalysis:
         return LinearDiscriminantAnalysis()
 
-def get_all_supported_classifiers(skip_list: Optional[List[str]] = []):
+def get_all_supported_classifiers(skip_list: Optional[List[str]] = []) -> Dict[str,Any]:
+    """
+    Retrieves all supported classifiers.
+
+    :param skip_list: Optional list of classifier names to skip when building the list.
+    :return: Dictionary of instantiated classifiers with {Name: Mo,el}.
+    """
     classifiers = {}
     for clf in inspect.getmembers(SupportedClassifiers, inspect.isfunction):
         if not clf[0].startswith('__') and clf[0] not in skip_list:
