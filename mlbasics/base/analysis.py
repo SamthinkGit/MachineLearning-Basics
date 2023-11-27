@@ -1,5 +1,7 @@
 from typing import Optional, List, Any
 
+from mlbasics.base.model import CompactModel
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer 
 from sklearn.ensemble import IsolationForest
@@ -12,6 +14,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import mlbasics.base.plot as bplot
 
 class DataAnalyzer():
 
@@ -90,4 +93,27 @@ class DataAnalyzer():
         Y_filtered = self.Y[preds == 1]
 
         self.__init__(X_filtered, Y_filtered)
+    
+    def compute_feature_importances(self):
+        model = DecisionTreeClassifier()
+        model.fit(self.X, self.Y)
+        return model.feature_importances_
+
+
+
         
+class ModelAnalyzer():
+    def __init__(self, model, x, y_real, y_pred) -> None:
+        self.model = model 
+        self.x = x 
+        self.y_real = y_real,
+        self.y_pred = y_pred,
+
+    def plot_results(self, dim):
+
+        pca = PCA(n_components=dim)
+
+        X_pca = pca.fit_transform(self.x)
+        x_plt = [X_pca[:,i] for i in range(dim)]
+
+        bplot.scatter(X=x_plt, Y=self.y_pred)

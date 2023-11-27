@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-from typing import Optional
+from typing import Optional, Any
 from sklearn.metrics import confusion_matrix
 from sklearn.decomposition import PCA
 
@@ -16,22 +16,30 @@ def plot_mt(df: pd.DataFrame):
     plt.title('Label Missclasification for each Model')
     plt.show()
 
-def pca_scatter(X,Y):
-    pca = PCA(n_components=2)
-    X_r = pca.fit_transform(X)
+def scatter(X, Y, support_vectors: Optional[Any] = None):
 
-    plt.scatter(
-        X_r[:, 0],
-        X_r[:, 1],
-        c=Y,
-        cmap='viridis',
-        s=20, 
-        alpha=0.7,
-        marker='x'
-        )
-    plt.title('Scatter plot PCA')
-    plt.colorbar()
+        fig = plt.figure()
+
+        if len(X) == 3:
+            ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax = fig.add_subplot(111)
+
+        ax.scatter(*X, c=Y, s=30, cmap=plt.cm.Paired)
+
+        if support_vectors != None:
+            ax.scatter(*support_vectors, facecolors='none', s=100, edgecolors='k')
+        
+        plt.title('SVC with RBF Kernel: Support Vectors in PCA Space')
+        plt.show()
+
+def bar(x, y, title = "Bar Graph"):
+
+    plt.figure(figsize=(12, 6))
+    plt.title(title)
+    plt.bar(x, y, align='center')
     plt.show()
+    
 
 def confusion_mat(y, y_pred):
     cm = confusion_matrix(y,y_pred)

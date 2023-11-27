@@ -32,15 +32,25 @@ class BaseModel:
         self.kfold_scores = None
     
 
-    def split(self, seed: int = 110, split_size: float = 0.333):
+    def split(self, seed: int = 110, split_size: float = 0.333, X: Optional[Any] = None, Y: Optional[Any] = None):
         """
         Splits the dataset into training and testing sets.
         :param seed: Random seed for reproducibility.
         :param split_size: Proportion of the dataset to include in the test split.
+        :param X: (Optional) Used to train X with different values
+        :param X: (Optional) Used to train Y with different values
         """
+
+        if X is not None and Y is not None:
+            x_clf = X
+            y_clf = Y
+        else:
+            x_clf = self.X
+            x_clf = self.Y
+
         self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(
-            self.X,
-            self.Y,
+            x_clf,
+            y_clf,
             test_size=split_size,
             random_state=seed
         )
@@ -192,6 +202,7 @@ class CompactModel(BaseModel):
                     name = name,
                     x = self.X_test if self.use_split else self.X,
                     y_real = self.Y_test if self.use_split else self.Y,
+                    model=model,
                     y_predicted = prediction,
                     labels=self.labels,
                     training_time = training_time,
@@ -204,3 +215,83 @@ class CompactModel(BaseModel):
                 t.write(f"✅ Completed: {name}")
 
         return results
+    
+class LearningModel(BaseModel):
+
+    def __init__(
+        self,
+        dataset: str | None = None,
+        X: Any | None = None,
+        Y: Any | None = None,
+        preprocessing: Any = None,
+        split_size: float = 0.3,
+        classifier: Dict[str,Any] = None,
+        kfold: KFold = None,
+        compute_probs: bool | None = False,
+        seed: int = 110,
+        steps: int = 30
+    ):
+
+        clfs = []
+        for i in range(steps):
+            clfs.append({"name": f'{classifier["name"]}{i}', "model": classifier["model"]})
+        self.clfs = clfs
+
+        # --- Load Dataset ---
+        if dataset:
+            X, Y = load_data(dataset)
+
+        super().__init__(X,Y)
+
+        # --- Save variables ---
+        self.use_split = True
+        self.split_size = split_size
+        self.seed = seed
+        self.steps = steps
+        self.preprocessing = preprocessing 
+        self.classifiers = clfs
+        self.kfold = kfold
+        self.compute_probs = compute_probs
+        self.results = {}
+        self.iteration = 0
+
+    def step(self):
+
+        timer = time.time()
+
+        # --- Preprocessing ---
+        if self.preprocessing is not None:
+            X_clf = self.X
+            Y_clf = self.Y
+            for p in self.preprocessing:
+                X_clf = p.fit_transform(X_clf) 
+            self.split(split_size=self.split_size, seed=self.seed, X=X_clf, Y=Y_clf)
+
+        # --- Train clf ---
+        self.fit(
+            classifier=self.clfs[self.iteration]["model"],
+            use_split=self.use_split,
+            kfold=self.kfold,
+            )
+        
+        training_time = time.time() - timer
+
+        # --- Predict new X ---
+        prediction = self.predict(use_split=self.use_split)
+
+        # --- Save Results ---
+        output = ClassificationResults(
+            name=self.clfs[self.iteration]["name"],
+            x = self.X_test,
+            y_real = self.Y_test,
+            model=self.clfs[self.iteration]["model"],
+            y_predicted = prediction,
+            labels=self.labels,
+            training_time = training_time,
+            kfold_score=self.kfold_scores,
+            y_scores=self.predict_proba(use_split=self.use_split) if self.compute_probs else None,
+        )
+
+        # --- Prepare next Run ---
+        self.results[self.clfs[self.iteration]["name"]] = output
+        self.iteration += 1

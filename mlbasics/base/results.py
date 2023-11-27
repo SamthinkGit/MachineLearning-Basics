@@ -21,6 +21,7 @@ class ClassificationResults():
         y_real: Optional[Any] = None,
         y_predicted: Any = None,
         labels: Any = None,
+        model: Any = None,
         training_time: time.time = None,
         kfold_score: Optional[Any] = None,
         y_scores: Optional[np.array] = None,
@@ -29,6 +30,7 @@ class ClassificationResults():
         self.x = x
         self.y_real = y_real
         self.y_predicted = y_predicted
+        self.model = model
         self.training_time = training_time
         self.kfold_score = kfold_score
         self.y_scores = y_scores
@@ -77,6 +79,7 @@ class ClassificationResults():
             self.fpr[i], self.tpr[i], _ = roc_curve(self.y_real == i, self.y_scores[:, i])
             self.roc[i] = auc(self.fpr[i], self.tpr[i])
 
+            
 def results2df(results: List[ClassificationResults]) -> pd.DataFrame:
     df = pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Time", "K-Fold Score", "AUC"])
     for model in results:
@@ -128,3 +131,7 @@ def missclasification_table(results: List[ClassificationResults], show_proportio
         df.loc[len(df.index)] = [model.name] + list(error) + [np.mean(error)]
 
     return df 
+
+def feature_importances_table(results: List[ClassificationResults]):
+    pass
+    
