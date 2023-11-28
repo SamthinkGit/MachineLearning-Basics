@@ -14,7 +14,7 @@ def get_mlbasics_path():
     
     path = os.environ.get("ML_BASICS_PATH")
     if not path:
-        path = pkg_resources.resource_filename("ML_BASICS_PATH", '')
+        path = pkg_resources.resource_filename("mlbasics", '')
         os.environ["ML_BASICS_PATH"] = path
 
     return path
