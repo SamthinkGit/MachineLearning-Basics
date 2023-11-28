@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import matplotlib.ticker as ticker
 
 from typing import Optional, Any
 from sklearn.metrics import confusion_matrix
@@ -21,6 +22,35 @@ def plot_mt(df: pd.DataFrame):
     plt.title('Label Missclasification for each Model')
     plt.show()
 
+def plot_learning_evaluation(df: pd.DataFrame):
+    """
+    Plots a learning table for one model.
+    :param df: A pandas DataFrame containing performance data of each model
+    :param start: X axis start value
+    :param end: X axis end value
+    .. note:: For especifying the X axis you must provide <start> and <end> values
+    .. note:: Condider using rresults2df() from with LearningModel for building the dataset
+    """
+
+    # --- Computing Time Tendency ---
+    z = np.polyfit(df.index, df['Time'], 1)
+    p = np.poly1d(z)
+    
+    # --- Building Figure ---
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.plot(df['Accuracy'], 'g-')
+    ax1.plot(df['Precision'], 'b-')
+    ax2.plot(df['Time'], 'r-')
+    ax2.plot(df.index, p(df.index), "r--", label='Trend Line')
+
+    ax1.set_xlabel('X data')
+    ax1.set_ylabel('Accuracy and Precision', color='g')
+    ax2.set_ylabel('Time', color='r')
+
+    # --- Showing ---
+    plt.show()
+    
 def scatter(X, Y, support_vectors: Optional[Any] = None):
     """
     Plots a scatter plot of the data points. Supports both 2D and 3D data.

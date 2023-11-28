@@ -46,7 +46,7 @@ class BaseModel:
             y_clf = Y
         else:
             x_clf = self.X
-            x_clf = self.Y
+            y_clf = self.Y
 
         self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(
             x_clf,
