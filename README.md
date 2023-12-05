@@ -15,7 +15,7 @@ MachineLearning-Basics is a framework designed to facilitate work on university-
 ## Installation
 To install MachineLearning-Basics, you can use:
 ```bash
-pip install ml-basics
+pip install https://github.com/SamthinkGit/MachineLearning-Basics/releases/download/install/mlbasics-0.0.1-py3-none-any.whl
 ```
 
 ## Usage
